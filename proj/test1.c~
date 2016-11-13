@@ -1,0 +1,175 @@
+/******************************************
+ * Tyler Simon
+ * 10/8/2009
+ * When Newton's method fails we use brute force
+ * Mimimize a function of 2 variables to 16 digit accuracy
+ * Domain:
+ *x = -1 to 1
+ *y = -1 to 1
+ * To compile: 
+ * cc -o findmin -m64 -D MAX_RECURSE=N findmin.c
+ * where N = total number of recursive calls, for this 
+ * function 12 gave good convergence
+ * to Run: ./findmin
+ * Note: z_min starts at 100.0 as the max you might neeed 
+ * to change this for your functions 
+ *******************************************/
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+
+#ifndef DEBUG
+#define DEBUG 1
+#endif
+
+#ifndef MAX_RECURSE
+#define MAX_RECURSE 12
+#endif
+
+static int inmin=0;
+static int recurse = 0;
+
+double locmin(double,double,double,double);
+double myfunc(double,double);
+void get_eps();
+
+/********
+find the minimum z of this function:  z=exp(sin(50x)) +sin(60exp(y)) +sin(70sin(x)) +sin(sin(80y)) -sin(10(x+y)) +(x^2+y^2)/4
+over the domain -1 and 1 for both x and y
+*********/
+double myfunc(double x, double y){
+   double z;
+   z= exp(sin(60.0*x)) + sin(50.0*exp(y)) + sin(70.0*sin(x)) + sin(sin(80.0*y)) - sin(10.0*(x+y)) + (x*x+y*y)/4.0;
+   if(inmin && DEBUG)printf("x=%2.20f, y=%2.20f, z=%2.20f\n", x,y,z);
+   return z;
+} //end myfunc
+
+int main(int argc, char **argv){
+   double x,y,z,z_min=100.0,y_min,x_min;
+   double x_loc,y_loc, z_loc;
+   double i,j;
+
+/*set initial step size to find global min*/
+   double incr=1.0E-3;
+
+/*look at our machine precision*/
+   get_eps();
+   
+   
+/*Domain is -1, to 1*/
+/*get a general "global" minumum to start the locmin recursion*/
+   x=-1.00;
+   while(x>=-1.0 && x<=1.0)
+   {
+      y=-1.00;
+      while(y>=-1.0 && y<=1.0)
+      {
+	 /*call function*/
+	 z = myfunc(x,y);
+
+	 /* check for global minumum*/
+	 if (z<=z_min){ z_min=z; x_min=x; y_min=y;}
+	 
+	 y+=incr;
+      }//end y loop
+      x+=incr;
+   }//end x loop
+
+   if(DEBUG)printf("Global Min: z_min = %2.15f at x=%2.20f y=%2.20f incr=%g\n", z_min,x_min, y_min,incr);
+
+/*Compute Local Minimum*/
+   z=locmin(x_min,y_min,z_min,incr);
+
+   return 0;
+}//end main
+
+/********************************************
+ * Function locmin
+ * given Finds local minumum
+ * takes x,y,z and increment as inputs
+ * through recursion returns a minumum z value
+ * uses a 9 point stencil to search solution space
+ *********************************************/
+double locmin(double x, double y, double z,double incr){
+   double i,ifin,j,x_loc,y_loc,z_min=z,x_min,y_min;
+   inmin=1;
+   for(i=incr; i>=incr/MAX_RECURSE; i=i/2)
+   {
+      /*3x3 grid, check 8 surrounding points*/
+      
+      if(DEBUG)printf("delta=%2.20f\n", i);
+      
+      /*check y points up and down*/
+      x_loc=x;
+      y_loc=(y-i);
+      z = myfunc(x_loc,y_loc);
+      if (z<=z_min){z_min=z;x_min=x_loc;y_min=y_loc;ifin=i;}
+      
+      x_loc=x;
+      y_loc=(y+i);
+      z = myfunc(x_loc,y_loc);
+      if (z<=z_min){z_min=z;x_min=x_loc;y_min=y_loc;ifin=i;}
+      
+      /*check x points left then right*/
+      y_loc=y;
+      x_loc=(x-i);
+      z = myfunc(x_loc,y_loc);
+      if (z<=z_min){z_min=z;x_min=x_loc;y_min=y_loc;ifin=i;}
+    
+      y_loc=y;
+      x_loc=(x+i);
+      z = myfunc(x_loc,y_loc);
+      if (z<=z_min){z_min=z;x_min=x_loc;y_min=y_loc;ifin=i;}
+      
+      /*check 4 diagonal points*/
+      x_loc=x+i;
+      y_loc=y+i;
+      z = myfunc(x_loc,y_loc);
+      if (z<=z_min){z_min=z;x_min=x_loc;y_min=y_loc;ifin=i;}
+      
+      x_loc=x-i;
+      y_loc=y-i;
+      z = myfunc(x_loc,y_loc);
+      if (z<=z_min){z_min=z;x_min=x_loc;y_min=y_loc;ifin=i;}
+      
+      x_loc=x-i;
+      y_loc=y+i;
+      z = myfunc(x_loc,y_loc);
+      if (z<=z_min){z_min=z;x_min=x_loc;y_min=y_loc;ifin=i;}
+      
+      x_loc=x+i;
+      y_loc=y-i;
+      z = myfunc(x_loc,y_loc);
+      if (z<=z_min){z_min=z;x_min=x_loc;y_min=y_loc;ifin=i;}
+
+      if(DEBUG)printf("rec=%d\n",recurse);
+       
+   }
+   if(DEBUG)printf("#BEST MIN z = %2.20f at x=%2.20f y=%2.20f, ifin=%2.20f\n", z_min,x_min, y_min, ifin);
+   recurse++;
+   /*Start recursion*/
+   if(recurse<=MAX_RECURSE)
+   {
+      z=locmin(x_min,y_min,z_min,ifin);
+   }
+   else{
+      printf("Result should be: z = -3.13833328825201318679 at x=0.46865387240424877247 y=-0.92291651641950001039\n\n");
+      printf("#FINAL MIN  after %d iterations z = %2.20f at x=%2.20f y=%2.20f\n", recurse-1,z_min,x_min, y_min);
+   }
+   return z;
+}
+
+/*get machine epsilon*/ 
+void get_eps(){
+   double xxeps=1.0; 
+   int i;
+   for(i=1; i<55; i++) /* we know about 52 bits */
+   {
+      xxeps=xxeps/2.0;
+      if(1.0-xxeps == 1.0) break;
+   }
+   xxeps=2.0*xxeps;
+   printf("type double eps=%24.17E \n", xxeps);
+
+}//end get_eps

@@ -1,0 +1,26 @@
+/* get_pi.c  pi = 24*atan(b2)  b1=2-sqrt(3)  b2=(2*sqrt(b1)-1)/b1 */
+/*              based on 4*atan(1) = pi               */
+/*              based on tan(a/2) = (1-cos(a))/sin(a) */
+/*              further reduction for tan(a/4)        */
+/*              sin(a/2)=sqrt((1-cos(a))/2)           */
+/*              cos(a/2)=sqrt((1+cos(a))/2)           */
+/* atan(1/x)=Pi/2-atan(x)   atan(-x)=-atan(x)         */
+
+#include <math.h>
+#include <stdio.h>
+int main(int argc, char *argv[])
+{
+   double b1, b2, pi;
+   double Pi = 3.1415926535897932384626433832795028841971 ;
+
+   printf("get_pi.c using double and math.h atan \n"); 
+   b1 = 2.0-sqrt(3.0);
+   b2 = (2.0*sqrt(b1)-1)/b1;
+   printf("pi=24*atan(b2) b2=%f, b1=%f \n",b2, b1);
+   printf("b2**10=%g, b2**20=%g \n",pow(b2,10.0), pow(b2,20.0)); 
+   pi = 24.0*atan(b2);
+   printf("    Pi= 3.1415926535897932384626433832795028841971 \n");
+   printf("get_pi=%20.17f \n", pi);
+   printf(" pi-Pi=%20.17f \n", pi-Pi);
+   return 0;
+}

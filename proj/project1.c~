@@ -1,0 +1,208 @@
+/******************************************
+ * To compile: 
+ * gcc -o findmin -lm -D MAX_RECURSE=16 project1.c
+ * to Run: ./findmin
+ *******************************************/
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+
+#ifndef MAX_RECURSE
+#define MAX_RECURSE 16
+#endif
+
+static int inmin = 0;
+static int recurse = 0;
+
+double localMin(double, double, double, double);
+double myFunc(double, double);
+void get_eps();
+
+double myFunc(double x, double y){
+   double z;
+
+   z= exp(sin(60.0 * x)) + sin(50.0 * exp(y)) + sin(70.0 * sin(x)) 
+      + sin(sin(80.0 * y)) - sin(10.0 * (x + y)) + (x * x + y * y) / 4.0;
+
+   return z;
+} //end myFunc
+
+int main(int argc, char **argv)
+{
+   double x, y, z, y_min, x_min;
+   double z_min = 100.0;
+   double x_loc, y_loc, z_loc;
+   double i, j;
+
+   /*set initial step size to find global min*/
+   double incr = 0.001;
+
+   get_eps();
+   
+   /*Domain is -1, to 1*/
+   x = -1.00;
+
+   while(x >= -1.0 && x <= 1.0)
+   {
+      y = -1.00;
+      while(y >= -1.0 && y <= 1.0)
+      {
+	 /*call function*/
+	 z = myFunc(x, y);
+
+	 /* check for global minumum*/
+	 if (z <= z_min)
+	 { 
+	    z_min = z; 
+	    x_min = x; 
+	    y_min = y;
+	 }
+	 
+	 y += incr;
+      }//end y loop
+
+      x += incr;
+
+   }//end x loop
+
+   printf("Global Min x = %2.25f y = %2.25f z = %2.25f\n",
+	  x_min, y_min, z_min);
+
+   /*Compute Local Minimum*/
+   z = localMin(x_min, y_min, z_min, incr);
+
+   return 0;
+}//end main
+
+double localMin(double x, double y, double z, double incr)
+{
+   double i, ifin, j, x_loc, y_loc, x_min, y_min;
+   double z_min = z, inmin = 1;
+
+   for(i = incr; i >= incr / MAX_RECURSE; i = i / 2)
+   {
+      /*check y points up and down*/
+      x_loc = x;
+      y_loc = (y-i);
+      z = myFunc(x_loc, y_loc);
+      if(z <= z_min)
+      {
+	 z_min = z ;
+	 x_min = x_loc;
+	 y_min = y_loc;
+	 ifin = i;
+      }
+      
+      x_loc = x;
+      y_loc = (y + i);
+      z = myFunc(x_loc, y_loc);
+      if(z <= z_min)
+      {
+	 z_min=z;
+	 x_min=x_loc;
+	 y_min=y_loc;
+	 ifin=i;
+      }
+      
+      /*check x points left then right*/
+      y_loc = y;
+      x_loc = (x - i);
+      z = myFunc(x_loc, y_loc);
+      if(z <= z_min)
+      {
+	 z_min = z;
+	 x_min = x_loc;
+	 y_min = y_loc;
+	 ifin = i;
+      }
+          
+      y_loc = y;
+      x_loc = (x + i);
+      z = myFunc(x_loc, y_loc);
+      if(z <= z_min)
+      {
+	 z_min = z;
+	 x_min = x_loc;
+	 y_min = y_loc;
+	 ifin = i;
+      }
+      
+      /*check 4 diagonal points*/
+      x_loc = x + i;
+      y_loc = y + i;
+      z = myFunc(x_loc, y_loc);
+      if(z <= z_min)
+      {
+	 z_min = z;
+	 x_min = x_loc;
+	 y_min = y_loc;
+	 ifin = i;
+      }
+      
+      x_loc = x - i;
+      y_loc = y - i;
+      z = myFunc(x_loc, y_loc);
+      if(z <= z_min)
+      {
+	 z_min = z;
+	 x_min = x_loc;
+	 y_min = y_loc;
+	 ifin = i;
+      }
+      
+      x_loc = x - i;
+      y_loc = y + i;
+      z = myFunc(x_loc, y_loc);
+      if(z <= z_min)
+      {
+	 z_min=z;
+	 x_min=x_loc;
+	 y_min=y_loc;
+	 ifin=i;
+      }
+      
+      x_loc = x + i;
+      y_loc = y - i;
+      z = myFunc(x_loc, y_loc);
+      if (z <= z_min)
+      {
+	 z_min = z;
+	 x_min = x_loc;
+	 y_min = y_loc;
+	 ifin = i;
+      }
+   }
+
+   printf("LOCAL MIN x = %2.25f y = %2.25f z = %2.25f\n"
+	  , x_min, y_min, z_min);
+
+   recurse++;
+   
+   /*Start recursion*/
+   if(recurse <= MAX_RECURSE)
+   {
+      z = localMin(x_min, y_min, z_min, ifin);
+   }
+   else
+   {
+      printf("FINAL MIN x = %2.25f y = %2.25f z = %2.25f\n", 
+	     x_min, y_min, z_min);
+   }
+
+   return z;
+}
+
+/*get machine epsilon*/ 
+void get_eps(){
+   double xxeps=1.0; 
+   int i;
+   for(i=1; i<55; i++) /* we know about 52 bits */
+   {
+      xxeps=xxeps/2.0;
+      if(1.0-xxeps == 1.0) break;
+   }
+   xxeps=2.0*xxeps;
+   printf("type double eps=%24.17E \n", xxeps);
+
+}//end get_eps
